@@ -1,0 +1,152 @@
+{
+  "description": "LLM ↔ ROS2 인터페이스 정의서",
+
+  "zone_config": {
+    "description": "구역별 안쪽/바깥쪽/중앙 좌표 (로봇 팔 base_link 기준, 단위: m). 좌표값을 직접 입력.",
+    "A": {
+      "role": "적재",
+      "assigned_color": "red",
+      "positions": {
+        "front": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "바깥쪽 (로봇에 가까운 쪽)"},
+        "center": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "중앙"},
+        "back": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "안쪽 (로봇에서 먼 쪽)"}
+      }
+    },
+    "B": {
+      "role": "적재",
+      "assigned_color": "green",
+      "positions": {
+        "front": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "바깥쪽 (로봇에 가까운 쪽)"},
+        "center": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "중앙"},
+        "back": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "안쪽 (로봇에서 먼 쪽)"}
+      }
+    },
+    "C": {
+      "role": "적재",
+      "assigned_color": "yellow",
+      "positions": {
+        "front": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "바깥쪽 (로봇에 가까운 쪽)"},
+        "center": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "중앙"},
+        "back": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "안쪽 (로봇에서 먼 쪽)"}
+      }
+    },
+    "D": {
+      "role": "출고",
+      "assigned_color": null,
+      "positions": {
+        "front": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "바깥쪽 (로봇에 가까운 쪽)"},
+        "center": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "중앙"},
+        "back": {"x": "_FILL", "y": "_FILL", "z": "_FILL", "label": "안쪽 (로봇에서 먼 쪽)"}
+      }
+    }
+  },
+
+  "object_detection": {
+    "description": "ROS2가 카메라로 검출해야 할 블록 정보",
+    "detectable_colors": ["red", "yellow", "green"],
+    "detection_output": {
+      "color": "red / yellow / green",
+      "position": {"x": 0.0, "y": 0.0, "z": 0.0}
+    }
+  },
+
+  "llm_output_format": {
+    "description": "LLM이 ROS2에 전달하는 명령 JSON. ROS2는 이 포맷만 파싱하면 됨.",
+
+    "when_executable": {
+      "action": "execute",
+      "reasoning": "string: 판단 근거",
+      "tasks": [
+        {
+          "color": "red / yellow / green",
+          "count": "number 또는 'all'",
+          "to_zone": "A / B / C / D",
+          "to_position": "front / center / back"
+        }
+      ]
+    },
+
+    "when_ambiguous": {
+      "action": "ask",
+      "reasoning": "string: 왜 애매한지",
+      "question": "string: 사용자에게 할 질문",
+      "options": ["선택지1", "선택지2"]
+    }
+  },
+
+  "execution_flow": {
+    "description": "ROS2가 LLM 출력(action: execute)을 받은 후 실행 흐름",
+    "steps": [
+      "1. LLM 출력 JSON 수신",
+      "2. action == 'execute' 확인",
+      "3. tasks 배열 순회:",
+      "   3-1. task.color에 해당하는 블록을 카메라로 검출 → pick 좌표",
+      "   3-2. task.to_zone의 positions에서 task.to_position 좌표를 직접 조회 → place 좌표",
+      "   3-3. pick → place 실행",
+      "   3-4. task.count만큼 반복 (all이면 해당 색상 전부)",
+      "4. action == 'ask'이면 question을 사용자에게 표시 → 답변 후 재요청"
+    ]
+  },
+
+  "communication": {
+    "recommended": "rosbridge + WebSocket (roslibpy)",
+    "topics": {
+      "/llm_command": {
+        "direction": "LLM → ROS2",
+        "type": "std_msgs/String",
+        "content": "LLM output JSON (action: execute인 것만)"
+      },
+      "/task_status": {
+        "direction": "ROS2 → LLM (선택)",
+        "type": "std_msgs/String",
+        "content": "완료/실패 피드백"
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "user_input": "빨간 블록 A구역 맨 안쪽에 넣고, 초록 블록 초록색 구역 맨 바깥쪽에 넣어줘",
+      "llm_output": {
+        "action": "execute",
+        "reasoning": "빨간색 블록을 A구역 맨 안쪽으로, 초록색 블록을 B구역 맨 바깥쪽으로 이동",
+        "tasks": [
+          {"color": "red", "count": "all", "to_zone": "A", "to_position": "back"},
+          {"color": "green", "count": "all", "to_zone": "B", "to_position": "front"}
+        ]
+      }
+    },
+    {
+      "user_input": "a세트 포장해줘",
+      "llm_output": {
+        "action": "execute",
+        "reasoning": "a세트(빨간색 1 + 초록색 1)를 D구역으로 포장",
+        "tasks": [
+          {"color": "red", "count": 1, "to_zone": "D", "to_position": "center"},
+          {"color": "green", "count": 1, "to_zone": "D", "to_position": "center"}
+        ]
+      }
+    },
+    {
+      "user_input": "정리해줘",
+      "llm_output": {
+        "action": "execute",
+        "reasoning": "모든 블록을 색상별 지정 구역으로 분류",
+        "tasks": [
+          {"color": "red", "count": "all", "to_zone": "A", "to_position": "center"},
+          {"color": "green", "count": "all", "to_zone": "B", "to_position": "center"},
+          {"color": "yellow", "count": "all", "to_zone": "C", "to_position": "center"}
+        ]
+      }
+    },
+    {
+      "user_input": "블록 옮겨줘",
+      "llm_output": {
+        "action": "ask",
+        "reasoning": "어떤 색상의 블록인지 불명확",
+        "question": "빨간색, 초록색, 노란색 중 어떤 블록을 옮길까요?",
+        "options": ["빨간색", "초록색", "노란색", "전부"]
+      }
+    }
+  ]
+}

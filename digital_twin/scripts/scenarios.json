@@ -1,0 +1,79 @@
+{
+  "description": "시연용 고정 시나리오. 키워드 전부 매칭 시 LLM 호출 없이 바로 출력.",
+
+  "color_zone_map": {
+    "red": "A",
+    "green": "B",
+    "yellow": "C"
+  },
+
+  "zone_aliases": {
+    "D": "outbound",
+    "빨간 구역": "A",
+    "초록 구역": "B",
+    "노란 구역": "C",
+    "출고": "outbound"
+  },
+
+  "position_offsets": {
+    "back":   {"description": "구역 안쪽 (로봇에서 먼 쪽)", "offset_y":  0.4},
+    "front":  {"description": "구역 바깥쪽 (로봇에서 가까운 쪽)", "offset_y": -0.4},
+    "center": {"description": "구역 중앙", "offset_y": 0.0}
+  },
+
+  "scenarios": [
+    {
+      "id": 1,
+      "trigger": "빨간색 물건 1개 A구역의 제일 안쪽에 보관해 줘. 노란색 물건 1개 노란 구역으로 제일 바깥쪽에 보관해 줘.",
+      "keywords": ["빨간", "안쪽", "노란", "바깥"],
+      "output": {
+        "action": "execute",
+        "reasoning": "빨간색 물건 1개를 A구역 안쪽에, 노란색 물건 1개를 C구역 바깥쪽에 보관합니다.",
+        "tasks": [
+          {"color": "red", "count": 1, "to_zone": "A", "to_position": "back"},
+          {"color": "yellow", "count": 1, "to_zone": "C", "to_position": "front"}
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "trigger": "빨간색 물건 1개, 노란색 물건 1개 같이 출고해 줘.",
+      "keywords": ["빨간", "노란", "출고"],
+      "output": {
+        "action": "execute",
+        "reasoning": "빨간색 물건 1개와 노란색 물건 1개를 D구역(출고)으로 이동합니다.",
+        "tasks": [
+          {"color": "red", "count": 1, "to_zone": "D", "to_position": "center"},
+          {"color": "yellow", "count": 1, "to_zone": "D", "to_position": "center"}
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "trigger": "초록색 물체 1개를 A 구역에 옮겨줘",
+      "keywords": ["초록", "A 구역", "옮겨"],
+      "output": {
+        "action": "ask",
+        "reasoning": "초록색 물건의 지정 구역은 B구역입니다. A구역은 빨간색 전용 구역이므로 확인이 필요합니다.",
+        "question": "초록색 물건의 지정 구역은 B구역인데, A구역(빨간색 전용)으로 옮기시겠습니까?",
+        "options": ["A구역으로 옮기기", "B구역(원래 구역)으로 옮기기"],
+        "followup": {
+          "1": {
+            "action": "execute",
+            "reasoning": "사용자 확인 후 초록색 물건 1개를 A구역으로 이동합니다.",
+            "tasks": [
+              {"color": "green", "count": 1, "to_zone": "A", "to_position": "center"}
+            ]
+          },
+          "2": {
+            "action": "execute",
+            "reasoning": "초록색 물건 1개를 원래 지정 구역인 B구역으로 이동합니다.",
+            "tasks": [
+              {"color": "green", "count": 1, "to_zone": "B", "to_position": "center"}
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

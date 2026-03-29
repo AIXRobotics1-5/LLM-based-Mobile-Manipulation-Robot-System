@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 팩토리 물류 AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #111827;
+      --bg-card: #1a2035;
+      --bg-elevated: #222c44;
+      --border: rgba(99, 130, 190, 0.12);
+      --border-hover: rgba(99, 130, 190, 0.3);
+      --text-primary: #f0f4fc;
+      --text-secondary: #8892a8;
+      --text-muted: #5a6478;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --accent2: #818cf8;
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.1);
+    }
+
+    body {
+      font-family: 'Inter', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── 배경 글로우 효과 ── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -40%;
+      left: -20%;
+      width: 80%;
+      height: 80%;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -30%;
+      right: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      position: relative;
+      z-index: 10;
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 18px 36px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
+    }
+
+    header .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      letter-spacing: 0.2px;
+    }
+
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--success-bg);
+      border: 1px solid rgba(52,211,153,0.2);
+      color: var(--success);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+    }
+
+    /* ── 영상 피드 ── */
+    .video-panel {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      gap: 8px;
+      padding: 10px 36px 0;
+      background: var(--bg-primary);
+    }
+
+    .video-feed {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .video-feed img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .video-label {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 6px;
+      z-index: 2;
+    }
+
+    /* ── 채팅 영역 ── */
+    #chat-area {
+      position: relative;
+      z-index: 5;
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #chat-area::-webkit-scrollbar { width: 5px; }
+    #chat-area::-webkit-scrollbar-track { background: transparent; }
+    #chat-area::-webkit-scrollbar-thumb { background: rgba(99,130,190,0.2); border-radius: 10px; }
+
+    /* ── 메시지 ── */
+    .msg-row {
+      display: flex;
+      gap: 12px;
+      animation: msgIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .msg-row.user { justify-content: flex-end; }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .avatar.ai {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      box-shadow: 0 2px 12px rgba(99,102,241,0.25);
+    }
+
+    .avatar.human {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      box-shadow: 0 2px 12px rgba(59,130,246,0.25);
+    }
+
+    .bubble {
+      max-width: 70%;
+      padding: 14px 20px;
+      border-radius: 18px;
+      font-size: 14.5px;
+      line-height: 1.7;
+    }
+
+    .msg-row.user .bubble {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.2);
+    }
+
+    .msg-row.assistant .bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 6px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    /* ── 판단 결과 ── */
+    .reasoning {
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      background: rgba(99,102,241,0.06);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      margin: 5px 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13.5px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .task-item:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-elevated);
+    }
+
+    .color-badge {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    }
+
+    .color-badge.red { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.3); }
+    .color-badge.green { background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.3); }
+    .color-badge.yellow { background: #eab308; box-shadow: 0 0 10px rgba(234,179,8,0.3); }
+
+    .arrow-icon {
+      color: var(--accent2);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* ── 선택지 ── */
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .option-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-family: inherit;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover {
+      background: rgba(99,102,241,0.1);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .hint {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* ── 로딩 ── */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 0;
+    }
+
+    .loading .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: loadPulse 1.4s ease-in-out infinite;
+    }
+
+    .loading .dot:nth-child(2) { animation-delay: 0.15s; }
+    .loading .dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes loadPulse {
+      0%, 80%, 100% { transform: scale(0.5); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ── 웰컴 ── */
+    .welcome {
+      align-self: center;
+      text-align: center;
+      padding: 80px 20px 40px;
+    }
+
+    .welcome-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15));
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+    }
+
+    .welcome h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .welcome p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .quick-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 11px 20px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-btn:hover {
+      background: rgba(99,102,241,0.08);
+      border-color: var(--accent);
+      color: var(--text-primary);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    /* ── 입력 영역 ── */
+    .input-area {
+      position: relative;
+      z-index: 10;
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 18px 36px 22px;
+    }
+
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      max-width: 820px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    #msg-input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 15px 20px;
+      border-radius: 16px;
+      font-size: 14.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #msg-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    #msg-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    #send-btn {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border: none;
+      color: #fff;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+    }
+
+    #send-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99,102,241,0.4);
+    }
+
+    #send-btn:active { transform: scale(0.95); }
+    #send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .send-arrow {
+      display: inline-block;
+      transform: rotate(-90deg);
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">&#x1F916;</div>
+  <div>
+    <h1>스마트 팩토리 물류 AI</h1>
+    <div class="subtitle">Natural Language &rarr; Robot Arm Control</div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      ROS2 대기 중
+    </div>
+  </div>
+</header>
+
+<div class="video-panel">
+  <div class="video-feed">
+    <span class="video-label">Camera (cuRobo Vision)</span>
+    <img src="/stream/curobo" alt="Camera Feed">
+  </div>
+  <div class="video-feed">
+    <span class="video-label">Isaac Sim (Digital Twin)</span>
+    <img src="/stream/isaacsim" alt="Isaac Sim Feed">
+  </div>
+</div>
+
+<div id="chat-area">
+  <div class="welcome">
+    <div class="welcome-icon">&#x1F3ED;</div>
+    <h2>무엇을 도와드릴까요?</h2>
+    <p>자연어로 블록 이동 명령을 내려보세요.</p>
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="sendQuick(this.textContent)">빨간 블록 A구역 맨 안쪽에 넣어줘</button>
+      <button class="quick-btn" onclick="sendQuick(this.textContent)">a세트 포장해줘</button>
+      <button class="quick-btn" onclick="sendQuick(this.textContent)">정리해줘</button>
+      <button class="quick-btn" onclick="sendQuick(this.textContent)">초록 블록 B구역 바깥쪽에 넣어줘</button>
+    </div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-wrap">
+    <input id="msg-input" type="text" placeholder="명령을 입력하세요..." autocomplete="off">
+    <button id="send-btn" onclick="send()">
+      <span class="send-arrow">&#x27A4;</span>
+    </button>
+  </div>
+</div>
+
+<script>
+const chatArea = document.getElementById('chat-area');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+
+msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.isComposing) send();
+});
+
+function sendQuick(text) {
+  msgInput.value = text;
+  send();
+}
+
+function sendOption(num) {
+  msgInput.value = num;
+  send();
+}
+
+function addMessage(role, html) {
+  const welcome = chatArea.querySelector('.welcome');
+  if (welcome) welcome.remove();
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  if (role === 'assistant') {
+    row.innerHTML = `
+      <div class="avatar ai">&#x1F916;</div>
+      <div class="bubble">${html}</div>
+    `;
+  } else {
+    row.innerHTML = `
+      <div class="bubble">${html}</div>
+      <div class="avatar human">&#x1F464;</div>
+    `;
+  }
+
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showLoading() {
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
+  row.id = 'loading';
+  row.innerHTML = `
+    <div class="avatar ai">&#x1F916;</div>
+    <div class="bubble">
+      <div class="loading">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+  `;
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeLoading() {
+  const el = document.getElementById('loading');
+  if (el) el.remove();
+}
+
+async function send() {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  msgInput.value = '';
+  addMessage('user', text);
+  sendBtn.disabled = true;
+  showLoading();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    removeLoading();
+    addMessage('assistant', data.reply);
+  } catch (err) {
+    removeLoading();
+    addMessage('assistant', '서버 연결 오류가 발생했습니다.');
+  }
+
+  sendBtn.disabled = false;
+  msgInput.focus();
+}
+</script>
+
+</body>
+</html>
